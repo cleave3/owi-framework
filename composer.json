@@ -1,0 +1,8 @@
+{
+    "require-dev": {
+        "phpunit/phpunit": "^6"
+    },
+    "require": {
+        "symfony/dotenv": "^3.4"
+    }
+}
