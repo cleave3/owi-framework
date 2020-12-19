@@ -14,7 +14,7 @@ class UserController extends BaseController
 
     public function add()
     {
-        return $this->response->json($_GET);
+        return $this->response->code(200)->json($_SERVER);
     }
 
     public function edit()
@@ -23,5 +23,6 @@ class UserController extends BaseController
 
     public function delete()
     {
+        return "here";
     }
 }

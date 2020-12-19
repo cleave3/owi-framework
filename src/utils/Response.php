@@ -11,7 +11,7 @@ class Response
      * sets response status 
      *
      * @param boolean $status
-     * @return void
+     * @return object
      */
     public function status($status = false)
     {
@@ -24,7 +24,7 @@ class Response
      * Defaults to server status code
      *
      * @param integer $code -  status code
-     * @return void
+     * @return object
      */
     public function code($code  = "")
     {
@@ -38,7 +38,7 @@ class Response
      *
      * @param string $message
      * @param array $data - data
-     * @return void
+     * @return object
      */
     function success($message = 'success', $data = "")
     {
@@ -53,7 +53,7 @@ class Response
      *
      * @param string $message
      * @param array $data - data
-     * @return void
+     * @return object
      */
     function badRequest($message = 'error')
     {

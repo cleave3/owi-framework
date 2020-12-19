@@ -2,34 +2,40 @@
 
 namespace App\router;
 
-use App\utils\Response;
+use const App\config\APP_NAME;
 
 class Router
 {
-    public $request;
-    public $response;
-
-    public function __construct($request)
+    public static function resolve_route()
     {
-        $this->request = $request;
-        $this->response = new Response();
+        $request = $_SERVER["REQUEST_URI"];
+        $route_parameters = preg_split('/(\?|\/)/', $request);
+        $classprefix = $route_parameters[1];
+
+        $class_method = count($route_parameters) > 2 ?
+            (empty($route_parameters[2]) ? "index"
+                : $route_parameters[2]) : "index";
+
+        return [
+            $request,
+            "App\controllers\\" . ucwords($classprefix) . "Controller",
+            $class_method
+        ];
     }
 
-    public function run()
+    public static function run()
     {
-        $route_parameters = explode("/", $this->request);
-        $classprefix = $route_parameters[1];
-        $class_method = explode("?", $route_parameters[2])[0];
-
-        $class = "App\controllers\\" . ucwords($classprefix) . "Controller";
-
-        if ($this->request == "/") {
-            echo $this->response->success("App is live");
-        } else if (class_exists($class)) {
-            $instance = new $class();
-            echo count($route_parameters) == 2 ? $instance->index() : $instance->$class_method();
+        list($request, $class, $method) = self::resolve_route();
+        if ($request == "/") {
+            echo json_encode(["status" => true, "message" => APP_NAME . " is live"]);
         } else {
-            echo $this->response->badRequest("route not found");
+
+            if (class_exists($class)) {
+                $instance = new $class();
+                echo $instance->$method();
+            } else {
+                echo json_encode(["status" => 404, "message" => "Route not found"]);
+            }
         }
     }
 }
