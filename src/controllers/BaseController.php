@@ -9,6 +9,7 @@ class BaseController
 {
     public $response;
     private $conn;
+    public $body;
 
 
     public function __construct()
