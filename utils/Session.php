@@ -4,7 +4,8 @@ namespace App\utils;
 
 class Session
 {
-    public function __construct()
+
+    public static function start()
     {
         session_start();
     }
@@ -18,6 +19,7 @@ class Session
 
     public static function get($key)
     {
+        if (!isset($_SESSION[$key])) return false;
         return $_SESSION[$key];
     }
 

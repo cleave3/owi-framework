@@ -14,12 +14,12 @@ foreach ($services as $name) {
             $name .= "Service";
         }
 
-        $file = fopen("./src/services/{$name}.php", "w");
+        $file = fopen("./services/{$name}.php", "w");
 
         $code = "<?php\n\nnamespace App\services;\n\n\nclass {$name}\n{\n}\n";
         fwrite($file, $code);
         fclose($file);
-        $output .= "\e[92m src/services/{$name}.php created successfully\n";
+        $output .= "\e[92m services/{$name}.php created successfully\n";
     }
 }
 print $output;

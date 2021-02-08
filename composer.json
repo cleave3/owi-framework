@@ -1,5 +1,5 @@
 {
-    "name": "ail/conf_logistics",
+    "name": "ail/owi-framework",
     "authors": [
         {
             "name": "cleave3",
@@ -8,10 +8,11 @@
     ],
     "autoload": {
         "psr-4": {
-            "App\\": "src/"
+            "App\\": ""
         }
     },
     "require": {
-        "firebase/php-jwt": "^5.2"
+        "firebase/php-jwt": "^5.2",
+        "phpmailer/phpmailer": "^6.2"
     }
 }

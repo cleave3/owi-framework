@@ -1,0 +1,152 @@
+:root {
+  --blue: #05798d;
+  --info: #05798d;
+  --green: #018d63;
+  --red: #be053d;
+  --orange: #dba102;
+  --light: #f5f5f5;
+  --white: #ffff;
+  --overlay: #0000004d;
+}
+
+/* Toastr */
+.toast-container {
+  position: fixed;
+  z-index: 10000000000;
+}
+
+.toast {
+  width: 300px;
+  max-width: 320px;
+  padding: 1rem;
+  margin: 0.5rem;
+  color: white;
+  transition: all 0.5s ease-in-out;
+  animation: zoom 0.5s linear;
+  border-radius: 5px;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.opaque {
+  opacity: 1 !important;
+}
+
+.top {
+  top: 20px;
+}
+
+.bottom {
+  bottom: 20px;
+}
+
+.left {
+  left: 20px;
+}
+
+.right {
+  right: 20px;
+}
+
+.success {
+  background-color: var(--green) !important;
+}
+
+.info {
+  background-color: var(--info) !important;
+}
+
+.error {
+  background-color: var(--red) !important;
+}
+
+.warning {
+  background-color: var(--orange) !important;
+  color: black !important;
+}
+
+.toastr-confirm {
+  position: fixed;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.toastr-confirm-body {
+  max-width: 500px;
+  min-width: 300px;
+  padding: 10px;
+  border: none;
+  box-shadow: 2px 2px 5px rgb(173, 172, 172);
+  background-color: whitesmoke;
+  animation: zoom 0.4s linear;
+  border-radius: 5px;
+}
+
+.toastr-title {
+  padding: 5px;
+  text-align: center;
+  margin: 5px;
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+.toastr-actions {
+  display: flex;
+  justify-content: space-between;
+}
+.toastr-btn-no {
+  padding: 15px;
+  width: 150px;
+  min-width: 100px;
+  background: linear-gradient(rgb(170, 10, 71), rgb(90, 7, 21));
+  color: white;
+  margin: 2px;
+  border: none;
+  box-shadow: 2px 2px 5px rgb(173, 172, 172);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  outline: none;
+}
+
+.toastr-btn-no:hover {
+  background: linear-gradient(rgb(90, 7, 21), rgb(170, 10, 71));
+}
+
+.toastr-btn-yes {
+  padding: 15px;
+  width: 150px;
+  min-width: 100px;
+  background: linear-gradient(rgb(10, 111, 170), rgb(7, 57, 90));
+  color: white;
+  border: none;
+  margin: 2px;
+  box-shadow: 2px 2px 5px rgb(173, 172, 172);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  outline: none;
+}
+
+.toastr-btn-yes:hover {
+  background: linear-gradient(rgb(7, 57, 90), rgb(10, 111, 170));
+}
+/* Animations */
+
+@keyframes zoom {
+  0% {
+    transform: scale(0.5);
+  }
+  75% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}

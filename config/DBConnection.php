@@ -2,8 +2,6 @@
 
 namespace App\config;
 
-(new DotEnv(__DIR__ . '/../../.env'))->load();
-
 class DBConnection
 {
     private $dbhost = 'localhost';

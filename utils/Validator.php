@@ -86,37 +86,37 @@ class Validator
         }
         return $this->response;
     }
-}
 
-/**
- * Init validation class
- * @param any param - body parameter
- * @return object - validator object
- */
-function owi($param)
-{
-    return new Validator($param);
-}
-
-/**
- *
- * @param array schema - schema array
- * @return object - response object
- */
-function validate($schema)
-{
-    $errors = [];
-    for ($i = 0; $i < count($schema); $i++) {
-        if ($schema[$i]["error"] != null)
-            $errors[] = $schema[$i]["error"];
+    /**
+     * Init validation class
+     * @param any param - body parameter
+     * @return object - validator object
+     */
+    public static function owi($param)
+    {
+        return new Validator($param);
     }
 
-    if (count($errors) > 0) {
-        $response["isvalid"] = false;
-        $response["errors"] = $errors;
-    } else {
-        $response["isvalid"] = true;
-        $response["errors"] = $errors;
+    /**
+     *
+     * @param array schema - schema array
+     * @return object - response object
+     */
+    public static function validate($schema)
+    {
+        $errors = [];
+        for ($i = 0; $i < count($schema); $i++) {
+            if ($schema[$i]["error"] != null)
+                $errors[] = $schema[$i]["error"];
+        }
+
+        if (count($errors) > 0) {
+            $response["isvalid"] = false;
+            $response["errors"] = $errors;
+        } else {
+            $response["isvalid"] = true;
+            $response["errors"] = $errors;
+        }
+        return $response;
     }
-    return $response;
-};
+}
