@@ -12,6 +12,7 @@ class Session
 
     public static function set(array $var)
     {
+        session_start();
         foreach ($var as $key => $value) {
             $_SESSION[$key] = $value;
         }
@@ -19,6 +20,7 @@ class Session
 
     public static function get($key)
     {
+        session_start();
         if (!isset($_SESSION[$key])) return false;
         return $_SESSION[$key];
     }

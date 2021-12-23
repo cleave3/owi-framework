@@ -211,6 +211,7 @@ abstract class Controller
         $joins = $argument["joins"] ?? "";
 
         $query = "SELECT $fields FROM $tablename $joins WHERE $condition";
+
         $result = $this->conn->prepare($query);
 
         if ($bindparam != null) {
@@ -279,7 +280,7 @@ abstract class Controller
      * 
      * ]
      * 
-     * @return array
+     * @return boolean
      */
     public function destroy(array $argument)
     {
@@ -331,6 +332,7 @@ abstract class Controller
         $tablename = $argument["tablename"];
         $condition = $argument["condition"] ?? 1;
         $fields = $argument["fields"] ?? "*";
+        $joins = $argument["joins"] ?? "";
         $bindparam = $argument["bindparam"] ?? null;
         $pageno = $argument["pageno"] ?? 1;
         $pageno = floatval($pageno) < 1 ? 1 : floatval($pageno);
@@ -340,14 +342,15 @@ abstract class Controller
             "tablename" => $tablename,
             "condition" => $condition,
             "fields" => $fields,
-            "bindparam" => $bindparam
+            "bindparam" => $bindparam,
+            "joins" => $joins
         ]);
 
-        $total = $count["status"] ? $count["data"] : 0;
+        $total = $count;
         $totalpages = ceil($total / $limit);
         $offset = ($pageno - 1) * $limit;
 
-        $query = "SELECT $fields FROM $tablename WHERE $condition LIMIT $limit OFFSET $offset";
+        $query = "SELECT $fields FROM $tablename $joins WHERE $condition LIMIT $limit OFFSET $offset";
         $result = $this->conn->prepare($query);
 
         if ($bindparam != null) {
@@ -357,13 +360,15 @@ abstract class Controller
         }
 
         $result->execute();
+        $data = $result->fetchAll();
         return [
-            "status" => true,
-            "message" => "Records found",
             "totalrecords" => $total,
+            "rows" => count($data),
+            "offset" => $offset,
+            "limit" => $limit,
             "totalpages" => $totalpages,
             "currentpage" => $pageno,
-            "data" => $result->fetchAll()
+            "data" => $data
         ];
     }
 
@@ -384,18 +389,19 @@ abstract class Controller
      * 
      * ]
      * 
-     * @return array
+     * @return integer
      */
     public function getCount(array $argument)
     {
         if (!is_array($argument)) throw new Exception("argument must be an array");
         if (!isset($argument["tablename"])) throw new Exception("key tablename not found");
         $tablename = $argument["tablename"];
+        $joins = $argument["joins"] ?? "";
         $condition = $argument["condition"] ?? 1;
         $fields = $argument["fields"] ?? "*";
         $bindparam = $argument["bindparam"] ?? null;
 
-        $query = "SELECT $fields FROM $tablename WHERE $condition";
+        $query = "SELECT $fields FROM $tablename $joins WHERE $condition";
         $result = $this->conn->prepare($query);
         if ($bindparam != null) {
             foreach ($bindparam as $key => $value) {

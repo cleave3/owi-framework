@@ -37,6 +37,9 @@ class MailService
             $mail->Subject = $subject;
             $mail->Body    = $body;
 
+            if (!preg_match('/^([a-z0-9\+_\-]+)(\.[a-z0-9\+_\-]+)*@([a-z0-9\-]+\.)+[a-z]{2,6}$/i', $recipient)) {
+                return;
+            }
             return $mail->send();
         } catch (Exception $error) {
             return $error->getMessage();

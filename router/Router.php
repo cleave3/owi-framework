@@ -31,18 +31,16 @@ class Router
     public function runapi($request, $class, $method, $param)
     {
         if ($request == "/") {
-            echo json_encode(["status" => true, "message" => "App is live"]);
+            echo json_encode(["status" => true, "code" => 200, "message" => "App is live"]);
         } else {
-
             if (method_exists($class, $method)) {
                 $instance = new $class();
                 echo $instance->$method($param);
             } else {
-                echo json_encode(["status" => 404, "message" => "Route not found"]);
+                echo json_encode(["status" => false, "code" =>  404, "message" => "Route not found"]);
             }
         }
     }
-
 
     public function runweb($path)
     {
@@ -53,6 +51,14 @@ class Router
         if ($file_to_load == "/") $file_to_load = "index";
 
         $file = __DIR__ . "/../views/" . $file_to_load . ".php";
+
+        if (!file_exists($file)) {
+            $file = __DIR__ . "/../views/" . $file_to_load . "index.php";
+        }
+
+        if (!file_exists($file)) {
+            $file = __DIR__ . "/../views/" . $file_to_load . "/index.php";
+        }
 
         if (!file_exists($file)) $file = __DIR__ . "/../views/404.php";
 
