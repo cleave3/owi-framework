@@ -7,6 +7,5 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'Owi\\' => array($baseDir . '/owicore'),
-    'Firebase\\JWT\\' => array($vendorDir . '/firebase/php-jwt/src'),
     'App\\' => array($baseDir . '/src'),
 );

@@ -11,10 +11,6 @@ class ComposerStaticInit2d9061adf89f694ab16cc075bfb4a377
         array (
             'Owi\\' => 4,
         ),
-        'F' => 
-        array (
-            'Firebase\\JWT\\' => 13,
-        ),
         'A' => 
         array (
             'App\\' => 4,
@@ -25,10 +21,6 @@ class ComposerStaticInit2d9061adf89f694ab16cc075bfb4a377
         'Owi\\' => 
         array (
             0 => __DIR__ . '/../..' . '/owicore',
-        ),
-        'Firebase\\JWT\\' => 
-        array (
-            0 => __DIR__ . '/..' . '/firebase/php-jwt/src',
         ),
         'App\\' => 
         array (
