@@ -5,9 +5,9 @@ namespace App\controllers;
 use App\config\DotEnv;
 use App\config\PDOConnection;
 use Exception;
+use PDO;
 
 
-(new DotEnv(__DIR__ . '/../.env'))->load();
 
 abstract class Controller
 {
@@ -15,60 +15,27 @@ abstract class Controller
     public $body;
     public $query;
     public $file;
+    
+    /**
+     * @var array List of middleware class names
+     */
+    protected $middlewares = [];
+
+    public function getMiddlewares()
+    {
+        return $this->middlewares;
+    }
+
     public function __construct()
     {
         $this->body = $_POST;
         $this->query = $_GET;
         $this->file = $_FILES;
-        $this->conn = (new PDOConnection())->__construct();
+        $this->conn = PDOConnection::getInstance()->getConnection();
     }
 
     /**
-     * DB error logger
-     *
-     * @param string $error
-     * @return void
-     */
-    public function errorhandler($error = '')
-    {
-        $debug = debug_backtrace()[1];
-        $line = $debug['line'];
-        $file = $debug['file'];
-        error_log("[" . date("D d-m-Y h:i:s A T") . "] Error: " . $error . " at $file on line $line \n", 3, "error.log");
-    }
-
-    /**
-     * bind params
-     * Return the correct PDO Binder depending value type
-     *
-     * @param mixed $value
-     * @param string $var_type
-     * @return string
-     */
-    public function bind($value, $var_type = null)
-    {
-        if (is_null($var_type)) {
-            switch (true) {
-                case is_bool($value):
-                    $var_type = \PDO::PARAM_BOOL;
-                    break;
-                case is_int($value):
-                    $var_type = \PDO::PARAM_INT;
-                    break;
-                case is_null($value):
-                    $var_type = \PDO::PARAM_NULL;
-                    break;
-                default:
-                    $var_type = \PDO::PARAM_STR;
-            }
-        }
-        return $var_type;
-    }
-
-    /**
-     * start transaction
-     *
-     * @return void
+     * Start transaction
      */
     public function startTransaction()
     {
@@ -76,9 +43,7 @@ abstract class Controller
     }
 
     /**
-     * commit transaction
-     *
-     * @return void
+     * Commit transaction
      */
     public function commitTransaction()
     {
@@ -86,9 +51,7 @@ abstract class Controller
     }
 
     /**
-     * rollback transactions in case of a failure
-     *
-     * @return void
+     * Rollback transaction
      */
     public function rollbackTransaction()
     {
@@ -96,351 +59,232 @@ abstract class Controller
     }
 
     /**
-     * inserts a record to database table
+     * Retrieve a single record
      *
-     * @param array $argument -
-     * 
-     * [
-     * 
-     * tablename => test, 
-     * 
-     * fields => "name,age,..", 
-     * 
-     * values => ":name,:age,..", 
-     * 
-     * bindparams => [":name" => "john", ...]
-     * 
-     * ]
-     * 
-     * 
-     * @return array
+     * @param string $table
+     * @param array $conditions Associative array of column => value
+     * @param string $fields
+     * @return mixed
      */
-    public function create(array $argument)
+    public function findOne(string $table, array $conditions = [], string $fields = "*")
     {
-        if (!is_array($argument)) throw new Exception("argument must be an array");
-        if (!isset($argument["tablename"])) throw new Exception("key tablename not found");
-        if (!isset($argument["fields"])) throw new Exception("key fields not found");
-        if (!isset($argument["values"])) throw new Exception("key values not found");
-
-        $table = $argument["tablename"];
-        $fields = $argument["fields"];
-        $values = $argument["values"];
-        $bindparam = $argument["bindparam"] ?? null;
-
-        $query = "INSERT INTO $table ($fields) VALUES ($values)";
-        $result = $this->conn->prepare($query);
-
-        if ($bindparam != null) {
-            foreach ($bindparam as $key => $value) {
-                $result->bindValue($key, $value, $this->bind($value));
+        $where = "";
+        if (!empty($conditions)) {
+            $whereParts = [];
+            foreach (array_keys($conditions) as $key) {
+                $whereParts[] = "$key = :$key";
             }
+            $where = "WHERE " . implode(" AND ", $whereParts);
         }
-        return $result->execute();
+
+        $sql = "SELECT $fields FROM $table $where LIMIT 1";
+        $stmt = $this->conn->prepare($sql);
+
+        foreach ($conditions as $key => $value) {
+            $stmt->bindValue(":$key", $value);
+        }
+
+        $stmt->execute();
+        return $stmt->fetch();
     }
 
     /**
-     * retrieves a single record from database table
+     * Retrieve multiple records
      *
-     * @param array $argument
-     * 
-     * [
-     * 
-     * tablename => test, 
-     * 
-     * fields => "name,age,..", 
-     * 
-     * condition => "name = :name", 
-     * 
-     * bindparams => [":name" => "john", ...]
-     * 
-     * ]
-     * 
-     * 
+     * @param string $table
+     * @param array $conditions Associative array of column => value
+     * @param string $fields
      * @return array
      */
-    public function findOne(array $argument)
+    public function findAll(string $table, array $conditions = [], string $fields = "*"): array
     {
-        if (!is_array($argument)) throw new Exception("argument must be an array");
-        if (!isset($argument["tablename"])) throw new Exception("key tablename not found");
-        $tablename = $argument["tablename"];
-        $condition = $argument["condition"] ?? 1;
-        $fields = $argument["fields"] ?? "*";
-        $bindparam = $argument["bindparam"] ?? null;
-        $joins = $argument["joins"] ?? "";
-
-        $query = "SELECT $fields FROM $tablename $joins WHERE $condition";
-        $result = $this->conn->prepare($query);
-
-        if ($bindparam != null) {
-            foreach ($bindparam as $key => $value) {
-                $result->bindValue($key, $value, $this->bind($value));
+        $where = "";
+        if (!empty($conditions)) {
+            $whereParts = [];
+            foreach (array_keys($conditions) as $key) {
+                $whereParts[] = "$key = :$key";
             }
+            $where = "WHERE " . implode(" AND ", $whereParts);
         }
-        $result->execute();
-        return $result->fetch();
-    }
 
+        $sql = "SELECT $fields FROM $table $where";
+        $stmt = $this->conn->prepare($sql);
 
-    /**
-     * retrieves multiple records from database table
-     *
-     * @param array $argument
-     * 
-     * [
-     * 
-     * tablename => test, 
-     * 
-     * fields => "name,age,..", 
-     * 
-     * condition => "name = :name", 
-     * 
-     * bindparams => [":name" => "john", ...]
-     * 
-     * ]
-     * 
-     * @return array
-     */
-    public function findAll(array $argument)
-    {
-        if (!is_array($argument)) throw new Exception("argument must be an array");
-        if (!isset($argument["tablename"])) throw new Exception("key tablename not found");
-        $tablename = $argument["tablename"];
-        $condition = $argument["condition"] ?? 1;
-        $fields = $argument["fields"] ?? "*";
-        $bindparam = $argument["bindparam"] ?? null;
-        $joins = $argument["joins"] ?? "";
-
-        $query = "SELECT $fields FROM $tablename $joins WHERE $condition";
-
-        $result = $this->conn->prepare($query);
-
-        if ($bindparam != null) {
-            foreach ($bindparam as $key => $value) {
-                $result->bindValue($key, $value, $this->bind($value));
-            }
+        foreach ($conditions as $key => $value) {
+            $stmt->bindValue(":$key", $value);
         }
-        $result->execute();
-        return $result->fetchAll();
+
+        $stmt->execute();
+        return $stmt->fetchAll();
     }
 
     /**
-     * updates database table records
+     * Update records
      *
-     * @param array $argument
-     * 
-     * [
-     * 
-     * tablename => test, 
-     * 
-     * fields => "name = :name,..", 
-     * 
-     * condition => "id = :id", 
-     *  
-     * bindparams => [":name" => "john", ":id" =>  1,...]
-     * 
-     * ]
-     * 
-     * 
-     * @return array
+     * @param string $table
+     * @param array $data Associative array of column => value to update
+     * @param array $conditions Associative array of column => value for WHERE clause
+     * @return bool
      */
-    public function update(array $argument)
+    public function update(string $table, array $data, array $conditions): bool
     {
-        if (!is_array($argument)) throw new Exception("argument must be an array");
-        if (!isset($argument["tablename"])) throw new Exception("key tablename not found");
-        $tablename = $argument["tablename"];
-        $fields = $argument["fields"];
-        $condition = $argument["condition"] ?? 1;
-        $bindparam = $argument["bindparam"] ?? null;
+        if (empty($data)) return false;
 
-        $query = "UPDATE $tablename SET $fields WHERE $condition";
-        $result = $this->conn->prepare($query);
-
-        if ($bindparam != null) {
-            foreach ($bindparam as $key => $value) {
-                $result->bindValue($key, $value, $this->bind($value));
-            }
+        $setParts = [];
+        foreach (array_keys($data) as $key) {
+            $setParts[] = "$key = :set_$key";
         }
-        return $result->execute();
-    }
+        $set = implode(", ", $setParts);
 
+        $whereParts = [];
+        foreach (array_keys($conditions) as $key) {
+            $whereParts[] = "$key = :where_$key";
+        }
+        $where = implode(" AND ", $whereParts);
 
-    /**
-     * deletes database table records
-     *
-     * @param array $argument
-     * 
-     * 
-     * [
-     * 
-     * tablename => test, 
-     *  
-     * condition => "id = :id", 
-     *  
-     * bindparams => [":name" => "john", ":id" =>  1,...]
-     * 
-     * ]
-     * 
-     * @return boolean
-     */
-    public function destroy(array $argument)
-    {
-        if (!is_array($argument)) throw new Exception("argument must be an array");
-        if (!isset($argument["tablename"])) throw new Exception("key tablename not found");
-        $tablename = $argument["tablename"];
-        $condition = $argument["condition"] ?? 1;
-        $bindparam = $argument["bindparam"] ?? null;
+        $sql = "UPDATE $table SET $set WHERE $where";
+        $stmt = $this->conn->prepare($sql);
 
-        $query = "DELETE FROM $tablename WHERE $condition";
-        $result = $this->conn->prepare($query);
-        if ($bindparam != null) {
-            foreach ($bindparam as $key => $value) {
-                $result->bindValue($key, $value, $this->bind($value));
-            }
+        foreach ($data as $key => $value) {
+            $stmt->bindValue(":set_$key", $value);
+        }
+        foreach ($conditions as $key => $value) {
+            $stmt->bindValue(":where_$key", $value);
         }
 
-        return $result->execute();
+        return $stmt->execute();
     }
 
     /**
-     * retrieves paginated records from database table
+     * Delete records
      *
-     * @param array $argument
-     * 
-     * 
-     * [
-     * 
-     * tablename => test, 
-     * 
-     * fields => "name,age,.." - optional defaults to *, 
-     * 
-     * condition => "name = :name", 
-     * 
-     * bindparams => [":name" => "john", ...]
-     * 
-     * pageno => 1
-     * 
-     * limit => 20 optional defaults to 20
-     * 
-     * ]
-     * 
-     * @return array
+     * @param string $table
+     * @param array $conditions
+     * @return bool
      */
-    public function paginate(array $argument)
+    public function destroy(string $table, array $conditions): bool
     {
-        if (!is_array($argument)) throw new Exception("argument must be an array");
-        if (!isset($argument["tablename"])) throw new Exception("key tablename not found");
-        $tablename = $argument["tablename"];
-        $condition = $argument["condition"] ?? 1;
-        $fields = $argument["fields"] ?? "*";
-        $joins = $argument["joins"] ?? "";
-        $bindparam = $argument["bindparam"] ?? null;
-        $pageno = $argument["pageno"] ?? 1;
-        $pageno = floatval($pageno) < 1 ? 1 : floatval($pageno);
-        $limit = $argument["limit"] ?? 20;
-
-        $count = $this->getCount([
-            "tablename" => $tablename,
-            "condition" => $condition,
-            "fields" => $fields,
-            "bindparam" => $bindparam,
-            "joins" => $joins
-        ]);
-
-        $total = $count;
-        $totalpages = ceil($total / $limit);
-        $offset = ($pageno - 1) * $limit;
-
-        $query = "SELECT $fields FROM $tablename $joins WHERE $condition LIMIT $limit OFFSET $offset";
-        $result = $this->conn->prepare($query);
-
-        if ($bindparam != null) {
-            foreach ($bindparam as $key => $value) {
-                $result->bindValue($key, $value, $this->bind($value));
-            }
+        if (empty($conditions)) {
+            // Prevent accidental delete all
+            throw new Exception("Conditions required for delete");
         }
 
-        $result->execute();
-        $data = $result->fetchAll();
+        $whereParts = [];
+        foreach (array_keys($conditions) as $key) {
+            $whereParts[] = "$key = :$key";
+        }
+        $where = implode(" AND ", $whereParts);
+
+        $sql = "DELETE FROM $table WHERE $where";
+        $stmt = $this->conn->prepare($sql);
+
+        foreach ($conditions as $key => $value) {
+            $stmt->bindValue(":$key", $value);
+        }
+
+        return $stmt->execute();
+    }
+
+    /**
+     * Get count of records
+     *
+     * @param string $table
+     * @param array $conditions
+     * @return int
+     */
+    public function getCount(string $table, array $conditions = []): int
+    {
+        $where = "";
+        if (!empty($conditions)) {
+            $whereParts = [];
+            foreach (array_keys($conditions) as $key) {
+                $whereParts[] = "$key = :$key";
+            }
+            $where = "WHERE " . implode(" AND ", $whereParts);
+        }
+
+        $sql = "SELECT COUNT(*) FROM $table $where";
+        $stmt = $this->conn->prepare($sql);
+
+        foreach ($conditions as $key => $value) {
+            $stmt->bindValue(":$key", $value);
+        }
+
+        $stmt->execute();
+        return $stmt->fetchColumn();
+    }
+
+    /**
+     * Get paginated records
+     *
+     * @param string $table
+     * @param int $page
+     * @param int $limit
+     * @param array $conditions
+     * @param string $fields
+     * @return array
+     */
+    public function paginate(string $table, int $page = 1, int $limit = 20, array $conditions = [], string $fields = "*"): array
+    {
+        $page = $page < 1 ? 1 : $page;
+        $offset = ($page - 1) * $limit;
+
+        $total = $this->getCount($table, $conditions);
+        $totalPages = ceil($total / $limit);
+
+        $where = "";
+        if (!empty($conditions)) {
+            $whereParts = [];
+            foreach (array_keys($conditions) as $key) {
+                $whereParts[] = "$key = :$key";
+            }
+            $where = "WHERE " . implode(" AND ", $whereParts);
+        }
+
+        $sql = "SELECT $fields FROM $table $where LIMIT $limit OFFSET $offset";
+        $stmt = $this->conn->prepare($sql);
+
+        foreach ($conditions as $key => $value) {
+            $stmt->bindValue(":$key", $value);
+        }
+
+        $stmt->execute();
+        $data = $stmt->fetchAll();
+
         return [
             "totalrecords" => $total,
             "rows" => count($data),
             "offset" => $offset,
             "limit" => $limit,
-            "totalpages" => $totalpages,
-            "currentpage" => $pageno,
+            "totalpages" => $totalPages,
+            "currentpage" => $page,
             "data" => $data
         ];
     }
 
     /**
-     * retrieves number of records found in database table
+     * Execute custom query
      *
-     * @param array $argument
-     * 
-     * [
-     * 
-     * tablename => test, 
-     * 
-     * fields => "name,age,..", 
-     * 
-     * condition => "name = :name", 
-     * 
-     * bindparams => [":name" => "john", ...]
-     * 
-     * ]
-     * 
-     * @return integer
-     */
-    public function getCount(array $argument)
-    {
-        if (!is_array($argument)) throw new Exception("argument must be an array");
-        if (!isset($argument["tablename"])) throw new Exception("key tablename not found");
-        $tablename = $argument["tablename"];
-        $joins = $argument["joins"] ?? "";
-        $condition = $argument["condition"] ?? 1;
-        $fields = $argument["fields"] ?? "*";
-        $bindparam = $argument["bindparam"] ?? null;
-
-        $query = "SELECT $fields FROM $tablename $joins WHERE $condition";
-        $result = $this->conn->prepare($query);
-        if ($bindparam != null) {
-            foreach ($bindparam as $key => $value) {
-                $result->bindValue($key, $value, $this->bind($value));
-            }
-        }
-        $result->execute();
-        return $result->rowCount();
-    }
-
-
-    /**
-     * returns the insert id of table primary key
-     *
+     * @param string $query
+     * @param array $params
      * @return mixed
      */
+    public function exec_query(string $query, array $params = [])
+    {
+        $stmt = $this->conn->prepare($query);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+        $stmt->execute();
+
+        if (preg_match('/^\s*(SELECT|SHOW|DESCRIBE|EXPLAIN)/i', $query)) {
+            return $stmt->fetchAll();
+        }
+        return true;
+    }
+
     public function lastId()
     {
         return $this->conn->lastInsertId();
-    }
-
-    /**
-     * Executes custom queries
-     *
-     * @param string $query
-     * @return array
-     */
-    public function exec_query(string $query)
-    {
-        if (empty($query)) throw new Exception("invalid query");
-        $result = $this->conn->prepare($query);
-        $data = $result->execute();
-        $queryarray =  explode(" ", $query);
-        $type = $queryarray[0];
-
-        if (preg_match('/select/i', $type)) {
-            $data = $result->fetchAll();
-        }
-
-        return $data;
     }
 }

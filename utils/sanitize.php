@@ -13,7 +13,8 @@ class Sanitize
      */
     public static function integer($currency)
     {
-        return floatval(preg_replace('/(,)/', "", $currency));
+        $clean = preg_replace('/,/', "", $currency);
+        return filter_var($clean, FILTER_VALIDATE_FLOAT) ?: 0.0;
     }
 
     /**
@@ -24,10 +25,8 @@ class Sanitize
      */
     public static function string($str)
     {
-        $string = filter_var($str, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_HIGH);
-        $string = stripslashes($string);
-        $string = strip_tags($string);
-        return trim(preg_replace('/(\'|")/', "", $string));
+        $str = strip_tags($str);
+        return htmlspecialchars($str, ENT_QUOTES, 'UTF-8');
     }
 
     /**
@@ -38,7 +37,7 @@ class Sanitize
      */
     public static function url($url)
     {
-        return filter_var($url, FILTER_SANITIZE_STRING);
+        return filter_var($url, FILTER_SANITIZE_URL);
     }
 
     /**
@@ -49,6 +48,17 @@ class Sanitize
      */
     public static function html($html)
     {
-        return stripslashes(htmlentities($html, ENT_QUOTES));
+        return htmlspecialchars($html, ENT_QUOTES, 'UTF-8');
+    }
+
+    /**
+     * Validate email
+     *
+     * @param string $email
+     * @return mixed
+     */
+    public static function email($email)
+    {
+        return filter_var($email, FILTER_VALIDATE_EMAIL);
     }
 }
