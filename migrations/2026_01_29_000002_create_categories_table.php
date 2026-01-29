@@ -4,22 +4,20 @@ use Owi\database\Migration;
 use Owi\database\Blueprint;
 use Owi\database\Schema;
 
-class CreateProductsTable extends Migration
+class CreateCategoriesTable extends Migration
 {
     public function up()
     {
-        Schema::create('products', function (Blueprint $table) {
+        Schema::create('categories', function (Blueprint $table) {
             $table->increments('id');
             $table->string('name');
-            $table->integer('price');
-            $table->text('description');
-            $table->integer('user_id');
+            $table->string('slug');
             $table->timestamps();
         });
     }
 
     public function down()
     {
-        Schema::drop('products');
+        Schema::drop('categories');
     }
 }
