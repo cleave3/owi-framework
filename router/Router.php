@@ -4,6 +4,13 @@ namespace App\router;
 
 class Router
 {
+    protected $container;
+
+    public function __construct(?\App\core\Container $container = null)
+    {
+        $this->container = $container ?: new \App\core\Container();
+    }
+
     public function resolve_route()
     {
         $request = $_SERVER["REQUEST_URI"];
@@ -32,21 +39,43 @@ class Router
     {
         if ($request == "/") {
             echo json_encode(["status" => true, "code" => 200, "message" => "App is live"]);
-        } else {
-            if (method_exists($class, $method)) {
-                $instance = new $class();
-                echo $instance->$method($param);
-            } else {
-                echo json_encode(["status" => false, "code" =>  404, "message" => "Route not found"]);
+            return;
+        }
+
+        if (class_exists($class)) {
+            // Use Container to resolve the controller instance
+            try {
+                $instance = $this->container->get($class);
+            } catch (\Exception $e) {
+                http_response_code(500);
+                echo json_encode(["status" => false, "code" => 500, "message" => $e->getMessage()]);
+                return;
+            }
+
+            if ($instance instanceof \App\controllers\Controller) {
+                if (method_exists($instance, $method)) {
+                    $middlewares = $instance->getMiddlewares();
+                    
+                    (new \App\core\Pipeline())
+                        ->send($request)
+                        ->through($middlewares)
+                        ->then(function ($request) use ($instance, $method, $param) {
+                            echo $instance->$method($param);
+                        });
+                    return;
+                }
             }
         }
+        
+        http_response_code(404);
+        echo json_encode(["status" => false, "code" => 404, "message" => "Route or resource not found"]);
     }
 
     public function runweb($path)
     {
         $file_to_load = $path;
 
-        if (preg_match_all('/(?)/',  $path)) $file_to_load = explode("?", $path)[0];
+        if (preg_match_all('/(\?)/',  $path)) $file_to_load = explode("?", $path)[0];
 
         if ($file_to_load == "/") $file_to_load = "index";
 
